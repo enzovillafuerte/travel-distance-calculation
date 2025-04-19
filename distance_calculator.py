@@ -158,4 +158,8 @@ if __name__ == "__main__":
     
     process_coordinates_file(input_file, output_file)
 
+# To run (Mac):
 # python distance_calculator.py
+
+# To run (Windows):
+# py distance_calculator.py
