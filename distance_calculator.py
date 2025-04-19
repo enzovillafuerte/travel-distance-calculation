@@ -44,50 +44,46 @@ def get_travel_info(origin_lat, origin_lng, dest_lat, dest_lng):
         print(f"Entered destination coordinates: {dest_coords}")
         
         # Wait longer for route calculation
-        sleep(8)  # Increased wait time
+        sleep(8)
         
-        # Try multiple approaches to find the route information
         try:
-            # First attempt: Look for the main route card
-            route_card = WebDriverWait(driver, 15).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "div[role='main'] div[role='article']"))
-            )
+            # Try first with class names
+            try:
+                time_element = WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((By.CLASS_NAME, "Fk3sm"))
+                )
+                distance_element = driver.find_element(By.CLASS_NAME, "ivN21e")
+                
+            except Exception:
+                print("Class name search failed, trying XPath...")
+                # If class names fail, try XPath
+                time_element = WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((
+                        By.XPATH, 
+                        '//*[@id="section-directions-trip-0"]/div[1]/div/div[1]/div[1]'
+                    ))
+                )
+                distance_element = driver.find_element(
+                    By.XPATH, 
+                    '//*[@id="section-directions-trip-0"]/div[1]/div/div[1]/div[2]/div'
+                )
             
-            # Look for specific elements within the route card
-            time_element = route_card.find_element(By.CSS_SELECTOR, "div[class*='section-directions-trip-duration']")
-            distance_element = route_card.find_element(By.CSS_SELECTOR, "div[class*='section-directions-trip-distance']")
+            time_text = time_element.text
+            distance_text = distance_element.text
             
-            info_text = f"{time_element.text} ({distance_element.text})"
+            info_text = f"{time_text} ({distance_text})"
             print(f"Found route information: {info_text}")
             
+            # Take a success screenshot
+            driver.save_screenshot("success_screenshot.png")
+            
+            return info_text
+                
         except Exception as e:
-            print(f"First attempt failed: {e}")
-            # Second attempt: Try to find any elements with numbers that look like times or distances
-            elements = driver.find_elements(By.CSS_SELECTOR, 
-                "div[class*='section-directions'] div, span[class*='section-directions']"
-            )
+            print(f"Failed to find route information: {e}")
+            driver.save_screenshot("route_not_found.png")
+            raise
             
-            route_info = []
-            for elem in elements:
-                try:
-                    text = elem.text.strip()
-                    # Look for text that contains numbers and typical route information indicators
-                    if text and any(char.isdigit() for char in text):
-                        if any(indicator in text.lower() for indicator in ['min', 'hr', 'km', 'mi', 'miles']):
-                            route_info.append(text)
-                except StaleElementReferenceException:
-                    continue
-            
-            if route_info:
-                info_text = " | ".join(route_info)
-                print(f"Found alternative route information: {info_text}")
-            else:
-                # Take a screenshot of the current state
-                driver.save_screenshot("route_not_found.png")
-                raise Exception("Could not find route information")
-            
-        return info_text
-        
     except Exception as e:
         print(f"An error occurred: {e}")
         driver.save_screenshot("error_screenshot.png")
