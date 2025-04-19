@@ -46,7 +46,7 @@ If the script fails to process a particular row, it will mark the values as 'N.A
 
 ## Notes
 
-- The script currently processes a subset of rows (configurable in the code)
+- The script currently processes a subset of rows (configurable in the code) ~ Need to select *manually* the number of rows you want to process.
 - Each request includes appropriate delays to respect Google Maps' service
 - Failed requests are handled gracefully and marked as 'N.A.' in the output
 - Screenshots are saved for debugging purposes when errors occur
