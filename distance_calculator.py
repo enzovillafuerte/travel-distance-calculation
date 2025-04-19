@@ -8,6 +8,8 @@ from time import sleep
 import pandas as pd
 import re
 
+# Function for extracting the values of time (min) and distance (miles)
+# From the extracted XPATH values for each
 def extract_number(text):
     """Extract the numeric value from strings like '13 min' or '5.2 miles'"""
     if isinstance(text, str):
@@ -15,22 +17,28 @@ def extract_number(text):
         return number[0] if number else 'N.A.'
     return 'N.A.'
 
+# Defining the code for the interaction of the bot with the browser
+# Flow: Directions button -> Input x1, y1 -> Input x2, y2 -> Extract information
 def get_travel_info(origin_lat, origin_lng, dest_lat, dest_lng):
+    
+    # Initializing the driver
     driver = webdriver.Chrome()
     
     try:
-        # Go to Google Maps
+        # Setting up the base/starting website
         driver.get('https://www.google.com/maps')
         print("Opened Google Maps")
         
-        # Wait for and click the directions button
+        # Waiting for the browser to load the click the directions button properly
         directions_button = WebDriverWait(driver, 10).until(
+            # Using CSS in the site's HTML to identify and reference the button of interest
             EC.element_to_be_clickable((By.CSS_SELECTOR, "button[aria-label*='Directions'], button[data-tooltip='Directions']"))
         )
+        # Automate the clicking on such button
         directions_button.click()
         print("Clicked directions button")
         
-        # Wait for the origin input field and enter coordinates
+        # Waiting for the origin input field and enter coordinates
         origin_input = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "input[placeholder*='Choose starting point'], input[placeholder*='Starting']"))
         )
@@ -42,7 +50,7 @@ def get_travel_info(origin_lat, origin_lng, dest_lat, dest_lng):
         
         sleep(3)
         
-        # Wait and enter destination coordinates
+        # Waiting and entering destination coordinates
         dest_input = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "input[placeholder*='Choose destination'], input[placeholder*='Destination']"))
         )
@@ -52,11 +60,13 @@ def get_travel_info(origin_lat, origin_lng, dest_lat, dest_lng):
         dest_input.send_keys(Keys.RETURN)
         print(f"Entered destination coordinates: {dest_coords}")
         
-        # Wait longer for route calculation
+        # Waiting 8 seconds for routing generation and calculation
         sleep(8)
         
+        # Series of error-handling in case there are failures 
         try:
-            # Try first with class names
+            # Try first with class names. The following have not been working
+            # Decided to go on the XPATH route, which starts in the Exception section
             try:
                 time_element = WebDriverWait(driver, 10).until(
                     EC.presence_of_element_located((By.CLASS_NAME, "Fk3sm"))
@@ -64,6 +74,7 @@ def get_travel_info(origin_lat, origin_lng, dest_lat, dest_lng):
                 distance_element = driver.find_element(By.CLASS_NAME, "ivN21e")
                 
             except Exception:
+                # Trying with XPATH coming directly from the HTML object referencss
                 print("Class name search failed, trying XPath...")
                 # If class names fail, try XPath
                 time_element = WebDriverWait(driver, 10).until(
@@ -77,9 +88,11 @@ def get_travel_info(origin_lat, origin_lng, dest_lat, dest_lng):
                     '//*[@id="section-directions-trip-0"]/div[1]/div/div[1]/div[2]/div'
                 )
             
+            # Accessing and storing the values of interest
             time_text = time_element.text
             distance_text = distance_element.text
             
+            # Applying the cleaning function defined at top of the script
             time_number = extract_number(time_text)
             distance_number = extract_number(distance_text)
             
@@ -101,24 +114,28 @@ def get_travel_info(origin_lat, origin_lng, dest_lat, dest_lng):
         sleep(2)
         driver.quit()
 
+# Input manually the number of rows of the dataset we want to process
+# We'll try running the whole dataset at once, although I am considering:
+    # Split the dataset in chunks replicating batch processing to not oversaturate computer power
+    # Using MultiThread processing similar to parallel processing
 def process_coordinates_file(input_file, output_file, num_rows=2):
-    # Read the Excel file
+    # Reading the Excel file
+    # Remember to chanfge manually the number of rows
     df = pd.read_excel(input_file)
     
-    # Take only the first num_rows
+    # Taking only the first num_rows - Testing
     df = df.head(num_rows)
     
-    # Create new columns for results
+    # Creating new columns for results
     df['Travel Time (min)'] = 'N.A.'
     df['Total Distance (miles)'] = 'N.A.'
     
-    # Process each row
+    # Process each row via for loop
     for index, row in df.iterrows():
         print(f"\nProcessing row {index + 1}/{num_rows}")
         try:
             time_value, distance_value = get_travel_info(
-                # row['y1'], row['x1'],  # Note: Swapped to match lat/lng format
-                #row['y2'], row['x2']
+
                 row['x1'], row['y1'],
                 row['x2'], row['y2']
             )
@@ -128,9 +145,10 @@ def process_coordinates_file(input_file, output_file, num_rows=2):
             
         except Exception as e:
             print(f"Error processing row {index + 1}: {e}")
+            # continue so we make sure it doesn't break the flow
             continue
     
-    # Save to CSV
+    # Saving to a new to CSV
     df.to_csv(output_file, index=False)
     print(f"\nProcessing complete. Results saved to {output_file}")
 
