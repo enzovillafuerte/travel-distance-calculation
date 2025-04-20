@@ -55,4 +55,5 @@ If the script fails to process a particular row, it will mark the values as 'N.A
 
 - Depends on Google Maps web interface
 - Processing speed is limited by necessary delays between requests
-- May require adjustments if Google Maps interface changes 
+- May require adjustments if Google Maps interface changes
+- Potential to implement batch-esque processing using Multithreading methods
