@@ -118,7 +118,7 @@ def get_travel_info(origin_lat, origin_lng, dest_lat, dest_lng):
 # We'll try running the whole dataset at once, although I am considering:
     # Split the dataset in chunks replicating batch processing to not oversaturate computer power
     # Using MultiThread processing similar to parallel processing
-def process_coordinates_file(input_file, output_file, num_rows=2):
+def process_coordinates_file(input_file, output_file, num_rows=133):
     # Reading the Excel file
     # Remember to chanfge manually the number of rows
     df = pd.read_excel(input_file)
